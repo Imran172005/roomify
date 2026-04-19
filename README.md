@@ -1,3 +1,26 @@
+
+import {useLocation, useParams} from "react-router";
+
+const visualizerId = () => {
+const { id } = useParams();
+const image = id ? sessionStorage.getItem(id) : null;
+const location = useLocation();
+const { initalImage, name } = location.state || {};
+
+    return (
+    <div className="visualizer">
+      <h1>Visualizer</h1>
+      {image && (
+        <div className="image-container">
+          <img src={image} alt="Floor plan" />
+        </div>
+      )}
+    </div>
+);
+};
+
+export default visualizerId;
+
 # Welcome to React Router!
 
 A modern, production-ready template for building full-stack React applications using React Router.

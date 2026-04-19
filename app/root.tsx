@@ -9,7 +9,7 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import type { AuthState } from "../type.d.ts";
+import type { AuthState } from "../types";
 import { useEffect, useState } from "react";
 import {
   getCurrentUser,
