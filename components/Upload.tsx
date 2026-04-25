@@ -36,6 +36,8 @@ const Upload = ({ onComplete }: UploadProps) => {
 
   const processFile = useCallback(
     (file: File, onCompleteCallback?: (base64: string) => void) => {
+      console.log("processFile called", { isSignedIn, fileType: file.type, fileSize: file.size });
+      
       if (!isSignedIn) return;
       if (!file.type.startsWith("image/")) return;
 
@@ -47,11 +49,13 @@ const Upload = ({ onComplete }: UploadProps) => {
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result as string;
+        console.log("FileReader loaded, base64 length:", base64.length);
         let currentProgress = 0;
 
         intervalRef.current = setInterval(() => {
           currentProgress += PROGRESS_INCREMENT;
           if (isMountedRef.current) setProgress(currentProgress);
+          console.log("Progress:", currentProgress);
 
           if (currentProgress >= 100) {
             if (intervalRef.current) {
@@ -61,6 +65,7 @@ const Upload = ({ onComplete }: UploadProps) => {
 
             if (isMountedRef.current) {
               setProgress(100);
+              console.log("Calling onCompleteCallback...");
               timeoutRef.current = setTimeout(() => {
                 if (isMountedRef.current) {
                   onCompleteCallback?.(base64);
@@ -69,6 +74,10 @@ const Upload = ({ onComplete }: UploadProps) => {
             }
           }
         }, PROGRESS_INTERVAL_MS);
+      };
+      
+      reader.onerror = () => {
+        console.error("FileReader error");
       };
 
       reader.readAsDataURL(file);

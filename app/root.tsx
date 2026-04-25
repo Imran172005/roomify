@@ -12,13 +12,13 @@ import "./app.css";
 import type { AuthState } from "../types";
 import { useEffect, useState } from "react";
 import {
-  getCurrentUser,
   signIn as puterSignIn,
   signOut as puterSignOut,
 } from "../lib/puter.action";
-import type * as PuterSDK from "@heyputer/puter.js";
+import type { Puter } from "@heyputer/puter.js";
 
-declare const puter: PuterSDK.Puter;
+// puter is attached to window by the Puter SDK script
+declare const puter: Puter;
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -61,6 +61,13 @@ export default function App() {
   const [authState, setAuthState] = useState<AuthState>(DEFAULT_AUTH_STATE);
   const refreshAuth = async () => {
     try {
+      // Check if puter is available on window first
+      if (typeof window !== 'undefined' && !(window as any).puter) {
+        console.log("Puter SDK not loaded yet");
+        setAuthState(DEFAULT_AUTH_STATE);
+        return false;
+      }
+      
       const user = await puter.auth.getUser();
 
       const isSignedIn = Boolean(user);
@@ -72,9 +79,14 @@ export default function App() {
       });
 
       return isSignedIn;
-    } catch (error) {
-      console.error("Auth refresh failed:", error);
-
+    } catch (error: any) {
+      // Don't treat "not enough funding" as a critical error
+      if (error?.message?.includes('funding') || error?.message?.includes('balance')) {
+        console.warn("Puter account has no funding - some features limited");
+      } else {
+        console.warn("Auth refresh failed:", error);
+      }
+      
       setAuthState(DEFAULT_AUTH_STATE);
       return false;
     }
@@ -85,12 +97,24 @@ export default function App() {
   },[]);
 
   const signIn = async () => {
-    await puterSignIn();
-    return await refreshAuth();
+    try {
+      await puterSignIn();
+      return await refreshAuth();
+    } catch (error: any) {
+      if (error?.message?.includes('funding') || error?.message?.includes('balance')) {
+        console.warn("Puter account has no funding for this operation");
+      }
+      return false;
+    }
   }
   const signOut = async () => {
-    await puterSignOut();
-    return await refreshAuth();
+    try {
+      await puterSignOut();
+      return await refreshAuth();
+    } catch (error) {
+      console.warn("Sign out failed:", error);
+      return false;
+    }
   }
   return(
   <main className="min-h-screen bg-background text-foreground relative z-10">
